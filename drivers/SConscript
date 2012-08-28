@@ -1,0 +1,62 @@
+Import('RTT_ROOT')
+Import('rtconfig')
+from building import *
+
+# get current directory
+cwd = GetCurrentDir()
+
+src = Split("""
+led.c
+board.c
+platform.c
+""")
+
+# add SD driver.
+if GetDepend('RT_USING_DFS') == True:
+	if GetDepend('RT_USING_SDIO') == True:
+		src += ['stm32f4xx_sd.c']
+	else:
+		src += ['sdcard.c']
+
+# add ethernet driver.
+if GetDepend('RT_USING_LWIP') == True:
+	src += ['dm9000.c']
+
+# add spi driver.
+if GetDepend('RT_USING_SPI') == True:
+	src += ['stm32f20x_40x_spi.c']
+	src += ['spi_flash_w25qxx.c']
+
+# add spi driver.
+if GetDepend('RT_USING_I2C') == True:
+	src += ['stm32_i2c.c']
+	src += ['codec_wm8978_i2c.c']
+
+# add LCD driver.
+if GetDepend('RT_USING_RTGUI') == True:
+	src += ['key.c']
+	src += ['touch.c']
+	if rtconfig.RT_USING_LCD_TYPE == 'PNL_A70':
+		src += ['lcd_a70.c']
+	elif rtconfig.RT_USING_LCD_TYPE == 'PNL_N35':
+		src += ['lcd_n35.c']
+	elif rtconfig.RT_USING_LCD_TYPE == 'PNL_T35':
+		src += ['lcd_t35.c']
+	elif rtconfig.RT_USING_LCD_TYPE == 'PNL_X35':
+		src += ['lcd_x35.c']
+
+# add USB driver.
+if GetDepend('RT_USING_USB_HOST') == True:
+	src+= ['stm32f4xx_hcd.c']
+	src+= ['usb_bsp.c']
+
+# add RTC driver.
+if GetDepend('RT_USING_RTC') == True:
+	src+= ['rtc.c']
+
+	
+CPPPATH = [cwd]
+
+group = DefineGroup('Drivers', src, depend = [''], CPPPATH = CPPPATH)
+
+Return('group')
