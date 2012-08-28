@@ -25,40 +25,15 @@
 
 void rt_init_thread_entry(void *parameter)
 {
-
     /* initialization RT-Thread Components
-	 *  finsh
-	 *  filesystems, such as fatfs, yaffs, uffs 
-	 *  GUI
-	 *  Lwip
-	 */
+     *  finsh
+     *  filesystems, such as fatfs, yaffs, uffs 
+     *  GUI
+     *  Lwip
+     */
+#ifdef RT_USING_COMPONENTS_INIT
     rt_components_init();
-}
-
-ALIGN(RT_ALIGN_SIZE)
-static char thread1_stack[1024];
-struct rt_thread thread1;
-static void rt_thread_entry1(void *parameter)
-{
-    while (1)
-    {
-	//	rt_kprintf("thread1 run...\n");
-        /* Insert delay */
-        rt_thread_delay(RT_TICK_PER_SECOND);
-    }
-}
-
-ALIGN(RT_ALIGN_SIZE)
-static char thread2_stack[1024];
-struct rt_thread thread2;
-static void rt_thread_entry2(void *parameter)
-{
-    while (1)
-    {
-	//	rt_kprintf("thread2 run...\n");
-        /* Insert delay */
-        rt_thread_delay(RT_TICK_PER_SECOND/2);
-    }
+#endif
 }
 
 int rt_application_init(void)
@@ -77,24 +52,6 @@ int rt_application_init(void)
 
     if (init_thread != RT_NULL)
         rt_thread_startup(init_thread);
-
-    //------- init led1 thread
-    rt_thread_init(&thread1,
-                   "led1",
-                   rt_thread_entry1,
-                   RT_NULL,
-                   &thread1_stack[0],
-                   sizeof(thread1_stack),11,5);
-    rt_thread_startup(&thread1);
-
-    //------- init led2 thread
-    rt_thread_init(&thread2,
-                   "led2",
-                   rt_thread_entry2,
-                   RT_NULL,
-                   &thread2_stack[0],
-                   sizeof(thread2_stack),11,5);
-    rt_thread_startup(&thread2);
 
     return 0;
 }
