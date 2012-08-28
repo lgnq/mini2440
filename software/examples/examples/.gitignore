@@ -5,6 +5,7 @@
 *.axf
 *.pyc
 *.bin
+*.o
 
 .sconsign.dblite
 project.uvproj
