@@ -1,6 +1,9 @@
 #ifndef __DM9000_H__
 #define __DM9000_H__
 
+#include <rtthread.h>
+#include <netif/ethernetif.h>
+
 #define DM9000_IO_BASE		0x20000300
 #define DM9000_DATA_BASE	0x20000304
 
@@ -142,6 +145,49 @@
 #define EPCR_ERRE           (1<<0)
 
 #define GPCR_GEP_CNTL       (1<<0)
+
+/* #define DM9000_DEBUG		1 */
+#if DM9000_DEBUG
+#define DM9000_TRACE	rt_kprintf
+#else
+#define DM9000_TRACE(...)
+#endif
+
+#define DM9000_PHY	0x40	/* PHY address 0x01 */
+
+#define MAX_ADDR_LEN 6
+
+enum DM9000_PHY_mode
+{
+	DM9000_10MHD   = 0,
+	DM9000_100MHD  = 1,
+	DM9000_10MFD   = 4,
+	DM9000_100MFD  = 5,
+	DM9000_AUTO    = 8,
+	DM9000_1M_HPNA = 0x10
+};
+
+enum DM9000_TYPE
+{
+	TYPE_DM9000E,
+	TYPE_DM9000A,
+	TYPE_DM9000B
+};
+
+struct rt_dm9000_eth
+{
+	/* inherit from ethernet device */
+	struct eth_device    parent;
+
+	enum DM9000_TYPE     type;
+	enum DM9000_PHY_mode mode;
+
+	rt_uint8_t           packet_cnt;				/* packet I or II */
+	rt_uint16_t          queue_packet_len;			/* queued packet (packet II) */
+
+	/* interface address info. */
+	rt_uint8_t           dev_addr[MAX_ADDR_LEN];	/* hw address	*/
+};
 
 void rt_hw_dm9000_init(void);
 

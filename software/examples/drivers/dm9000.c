@@ -11,66 +11,28 @@
  * nLAN_CS connects to nGCS4
  */
 
-/* #define DM9000_DEBUG		1 */
-#if DM9000_DEBUG
-#define DM9000_TRACE	rt_kprintf
-#else
-#define DM9000_TRACE(...)
-#endif
-
-/*
+ /*
  * DM9000 interrupt line is connected to PF7
  */
-//--------------------------------------------------------
 
-#define DM9000_PHY		  0x40	/* PHY address 0x01 */
-
-#define MAX_ADDR_LEN 6
-enum DM9000_PHY_mode
-{
-	DM9000_10MHD = 0, DM9000_100MHD = 1,
-	DM9000_10MFD = 4, DM9000_100MFD = 5,
-	DM9000_AUTO  = 8, DM9000_1M_HPNA = 0x10
-};
-
-enum DM9000_TYPE
-{
-	TYPE_DM9000E,
-	TYPE_DM9000A,
-	TYPE_DM9000B
-};
-
-struct rt_dm9000_eth
-{
-	/* inherit from ethernet device */
-	struct eth_device parent;
-
-	enum DM9000_TYPE type;
-	enum DM9000_PHY_mode mode;
-
-	rt_uint8_t packet_cnt;				  /* packet I or II */
-	rt_uint16_t queue_packet_len;		   /* queued packet (packet II) */
-
-	/* interface address info. */
-	rt_uint8_t  dev_addr[MAX_ADDR_LEN];		/* hw address	*/
-};
 static struct rt_dm9000_eth dm9000_device;
-static struct rt_semaphore sem_ack, sem_lock;
-
-void rt_dm9000_isr(int irqno);
+static struct rt_semaphore sem_ack;
+static struct rt_semaphore sem_lock;
 
 static void delay_ms(rt_uint32_t ms)
 {
 	rt_uint32_t len;
 	for (;ms > 0; ms --)
-		for (len = 0; len < 100; len++ );
+		for (len = 0; len < 100; len ++)
+			;
 }
 
 /* Read a byte from I/O port */
 rt_inline rt_uint8_t dm9000_io_read(rt_uint16_t reg)
 {
 	DM9000_IO = reg;
-	return (rt_uint8_t) DM9000_DATA;
+
+	return (rt_uint8_t)DM9000_DATA;
 }
 
 /* Write a byte to I/O port */
@@ -87,11 +49,14 @@ rt_inline rt_uint16_t phy_read(rt_uint16_t reg)
 
 	/* Fill the phyxcer register into REG_0C */
 	dm9000_io_write(DM9000_EPAR, DM9000_PHY | reg);
-	dm9000_io_write(DM9000_EPCR, 0xc);	/* Issue phyxcer read command */
+	/* Issue phyxcer read command */
+	dm9000_io_write(DM9000_EPCR, 0xc);
 
-	delay_ms(100);		/* Wait read complete */
+	/* Wait read complete */
+	delay_ms(100);
 
-	dm9000_io_write(DM9000_EPCR, 0x0);	/* Clear phyxcer read command */
+	/* Clear phyxcer read command */
+	dm9000_io_write(DM9000_EPCR, 0x0);
 	val = (dm9000_io_read(DM9000_EPDRH) << 8) | dm9000_io_read(DM9000_EPDRL);
 
 	return val;
@@ -106,17 +71,22 @@ rt_inline void phy_write(rt_uint16_t reg, rt_uint16_t value)
 	/* Fill the written data into REG_0D & REG_0E */
 	dm9000_io_write(DM9000_EPDRL, (value & 0xff));
 	dm9000_io_write(DM9000_EPDRH, ((value >> 8) & 0xff));
-	dm9000_io_write(DM9000_EPCR, 0xa);	/* Issue phyxcer write command */
+	/* Issue phyxcer write command */
+	dm9000_io_write(DM9000_EPCR, 0xa);
 
-	delay_ms(500);		/* Wait write complete */
+	/* Wait write complete */
+	delay_ms(500);
 
-	dm9000_io_write(DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
+	/* Clear phyxcer write command */
+	dm9000_io_write(DM9000_EPCR, 0x0);
 }
 
 /* Set PHY operationg mode */
 rt_inline void phy_mode_set(rt_uint32_t media_mode)
 {
-	rt_uint16_t phy_reg4 = 0x01e1, phy_reg0 = 0x1000;
+	rt_uint16_t phy_reg4 = 0x01e1;
+	rt_uint16_t phy_reg0 = 0x1000;
+
 	if (!(media_mode & DM9000_AUTO))
 	{
 		switch (media_mode)
@@ -139,7 +109,7 @@ rt_inline void phy_mode_set(rt_uint32_t media_mode)
 			break;
 		}
 		phy_write(4, phy_reg4);	/* Set PHY media mode */
-		phy_write(0, phy_reg0);	/*  Tmp */
+		phy_write(0, phy_reg0);	/* Tmp */
 	}
 
 	dm9000_io_write(DM9000_GPCR, 0x01);	/* Let GPIO0 output */
@@ -219,12 +189,15 @@ void rt_dm9000_isr(int irqno)
 /* initialize the interface */
 static rt_err_t rt_dm9000_init(rt_device_t dev)
 {
-	int i, oft, lnk;
+	int i;
+	int oft;
+	int lnk;
 	rt_uint32_t value;
 
 	/* RESET device */
 	dm9000_io_write(DM9000_NCR, NCR_RST);
-	delay_ms(1000);		/* delay 1ms */
+	/* delay 1ms */
+	delay_ms(1000);
 
 	/* identfy DM9000 */
 	value  = dm9000_io_read(DM9000_VIDL);
@@ -238,6 +211,7 @@ static rt_err_t rt_dm9000_init(rt_device_t dev)
 	else
 	{
 		rt_kprintf("dm9000 id: 0x%x\n", value);
+
 		return -RT_ERROR;
 	}
 
@@ -273,15 +247,16 @@ static rt_err_t rt_dm9000_init(rt_device_t dev)
 
 	if (dm9000_device.mode == DM9000_AUTO)
 	{
-	    i = 0;
+		i = 0;
 		while (!(phy_read(1) & 0x20))
 		{
 			/* autonegation complete bit */
-			rt_thread_delay( RT_TICK_PER_SECOND/10 );
-			i++;
-			if (i > 30 ) /* wait 3s */
+			rt_thread_delay(RT_TICK_PER_SECOND/10);
+			i ++;
+			if (i > 30) /* wait 3s */
 			{
 				rt_kprintf("could not establish link\n");
+
 				return 0;
 			}
 		}
@@ -311,7 +286,7 @@ static rt_err_t rt_dm9000_init(rt_device_t dev)
 	rt_kprintf("mode\n");
 
 	/* Enable TX/RX interrupt mask */
-	dm9000_io_write(DM9000_IMR,IMR_PAR | IMR_PTM | IMR_PRM);
+	dm9000_io_write(DM9000_IMR, IMR_PAR | IMR_PTM | IMR_PRM);
 
 	return RT_EOK;
 }
@@ -332,13 +307,16 @@ static rt_err_t rt_dm9000_close(rt_device_t dev)
 	return RT_EOK;
 }
 
-static rt_size_t rt_dm9000_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_size_t size)
+static rt_size_t
+rt_dm9000_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size)
 {
 	rt_set_errno(-RT_ENOSYS);
+
 	return 0;
 }
 
-static rt_size_t rt_dm9000_write (rt_device_t dev, rt_off_t pos, const void* buffer, rt_size_t size)
+static rt_size_t
+rt_dm9000_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size)
 {
 	rt_set_errno(-RT_ENOSYS);
 	return 0;
@@ -350,10 +328,11 @@ static rt_err_t rt_dm9000_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 	{
 	case NIOCTL_GADDR:
 		/* get mac address */
-		if (args) rt_memcpy(args, dm9000_device.dev_addr, 6);
-		else return -RT_ERROR;
+		if (args)
+			rt_memcpy(args, dm9000_device.dev_addr, 6);
+		else
+			return -RT_ERROR;
 		break;
-
 	default :
 		break;
 	}
@@ -363,7 +342,7 @@ static rt_err_t rt_dm9000_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 
 /* ethernet device interface */
 /* transmit packet. */
-rt_err_t rt_dm9000_tx( rt_device_t dev, struct pbuf* p)
+rt_err_t rt_dm9000_tx(rt_device_t dev, struct pbuf *p)
 {
 	DM9000_TRACE("dm9000 tx: %d\n", p->tot_len);
 
@@ -381,7 +360,8 @@ rt_err_t rt_dm9000_tx( rt_device_t dev, struct pbuf* p)
 		 * This list MUST consist of a single packet ONLY */
 		struct pbuf *q;
 		rt_uint16_t pbuf_index = 0;
-		rt_uint8_t word[2], word_index = 0;
+		rt_uint8_t word[2];
+		rt_uint8_t word_index = 0;
 
 		q = p;
 		/* Write data into dm9000a, two bytes at a time
@@ -391,7 +371,7 @@ rt_err_t rt_dm9000_tx( rt_device_t dev, struct pbuf* p)
 		{
 			if (pbuf_index < q->len)
 			{
-				word[word_index++] = ((u8_t*)q->payload)[pbuf_index++];
+				word[word_index++] = ((u8_t *)q->payload)[pbuf_index++];
 				if (word_index == 2)
 				{
 					DM9000_outw(DM9000_DATA_BASE, (word[1] << 8) | word[0]);
@@ -448,10 +428,11 @@ rt_err_t rt_dm9000_tx( rt_device_t dev, struct pbuf* p)
 /* reception packet. */
 struct pbuf *rt_dm9000_rx(rt_device_t dev)
 {
-	struct pbuf* p;
+	struct pbuf *p;
 	rt_uint32_t rxbyte;
-	rt_uint16_t rx_status, rx_len;
-	rt_uint16_t* data;
+	rt_uint16_t rx_status;
+	rt_uint16_t rx_len;
+	rt_uint16_t *data;
 
 	/* init p pointer */
 	p = RT_NULL;
@@ -485,12 +466,12 @@ __error_retry:
 		p = pbuf_alloc(PBUF_LINK, rx_len, PBUF_RAM);
 		if (p != RT_NULL)
 		{
-			struct pbuf* q;
+			struct pbuf *q;
 			rt_int32_t len;
 
 			for (q = p; q != RT_NULL; q= q->next)
 			{
-				data = (rt_uint16_t*)q->payload;
+				data = (rt_uint16_t *)q->payload;
 				len = q->len;
 
 				while (len > 0)
@@ -516,8 +497,7 @@ __error_retry:
 			}
 		}
 
-		if ((rx_status & 0xbf00) || (rx_len < 0x40)
-				|| (rx_len > DM9000_PKT_MAX))
+		if ((rx_status & 0xbf00) || (rx_len < 0x40) || (rx_len > DM9000_PKT_MAX))
 		{
 			rt_kprintf("rx error: status %04x, rx_len: %d\n", rx_status, rx_len);
 
@@ -543,7 +523,8 @@ __error_retry:
 			}
 
 			/* it issues an error, release pbuf */
-			if (p != RT_NULL) pbuf_free(p);
+			if (p != RT_NULL)
+				pbuf_free(p);
 			p = RT_NULL;
 
 			goto __error_retry;
@@ -574,21 +555,21 @@ __error_retry:
 
 void INTEINT4_7_handler(int irqno)
 {
-    rt_uint32_t eint_pend;
+	rt_uint32_t eint_pend;
 
-    eint_pend = EINTPEND;
+	eint_pend = EINTPEND;
 
-    /* EINT7 : DM9000AEP */
-    if( eint_pend & (1<<7) )
-    {
-        rt_dm9000_isr(0);
-    }
+	/* EINT7 : DM9000AEP */
+	if (eint_pend & (1<<7))
+	{
+		rt_dm9000_isr(0);
+	}
 
 	/* clear EINT pending bit */
 	EINTPEND = eint_pend;
 }
 
-void rt_hw_dm9000_init()
+void rt_hw_dm9000_init(void)
 {
 	/* Set GPF7 as EINT7 */
 	GPFCON = GPFCON & (~(3 << 14)) | (2 << 14);
@@ -606,9 +587,9 @@ void rt_hw_dm9000_init()
 	rt_sem_init(&sem_ack, "tx_ack", 1, RT_IPC_FLAG_FIFO);
 	rt_sem_init(&sem_lock, "eth_lock", 1, RT_IPC_FLAG_FIFO);
 
-	dm9000_device.type  = TYPE_DM9000A;
-	dm9000_device.mode	= DM9000_AUTO;
-	dm9000_device.packet_cnt = 0;
+	dm9000_device.type             = TYPE_DM9000A;
+	dm9000_device.mode             = DM9000_AUTO;
+	dm9000_device.packet_cnt       = 0;
 	dm9000_device.queue_packet_len = 0;
 
 	/*
@@ -623,16 +604,16 @@ void rt_hw_dm9000_init()
 	dm9000_device.dev_addr[4] = 0x02;
 	dm9000_device.dev_addr[5] = 0x0F;
 
-	dm9000_device.parent.parent.init	   = rt_dm9000_init;
-	dm9000_device.parent.parent.open	   = rt_dm9000_open;
-	dm9000_device.parent.parent.close	   = rt_dm9000_close;
-	dm9000_device.parent.parent.read	   = rt_dm9000_read;
-	dm9000_device.parent.parent.write	   = rt_dm9000_write;
-	dm9000_device.parent.parent.control	= rt_dm9000_control;
+	dm9000_device.parent.parent.init       = rt_dm9000_init;
+	dm9000_device.parent.parent.open       = rt_dm9000_open;
+	dm9000_device.parent.parent.close      = rt_dm9000_close;
+	dm9000_device.parent.parent.read       = rt_dm9000_read;
+	dm9000_device.parent.parent.write      = rt_dm9000_write;
+	dm9000_device.parent.parent.control    = rt_dm9000_control;
 	dm9000_device.parent.parent.user_data  = RT_NULL;
 
-	dm9000_device.parent.eth_rx	 = rt_dm9000_rx;
-	dm9000_device.parent.eth_tx	 = rt_dm9000_tx;
+	dm9000_device.parent.eth_rx = rt_dm9000_rx;
+	dm9000_device.parent.eth_tx = rt_dm9000_tx;
 
 	eth_device_init(&(dm9000_device.parent), "e0");
 

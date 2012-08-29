@@ -1,5 +1,6 @@
 #include <rtthread.h>
 #include "board.h"
+#include "platform.h"
 
 #ifdef RT_USING_RTC
 #include "rtc.h"
