@@ -139,13 +139,9 @@ int rt_application_init(void)
         return -1;
     }
 
-    rt_thread_init(&thread1,
-                   "thread1",
-                   rt_thread_entry1,
-                   RT_NULL,
-                   &thread1_stack[0],
-                   sizeof(thread1_stack),11,5);
-    rt_thread_startup(&thread1);
+    result = rt_thread_init(&thread1, "thread1", rt_thread_entry1, RT_NULL, &thread1_stack[0], sizeof(thread1_stack), 11, 5);
+    if (result == RT_OK)
+        rt_thread_startup(&thread1);
 
     return 0;
 }
