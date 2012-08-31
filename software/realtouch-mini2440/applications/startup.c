@@ -41,24 +41,6 @@ extern unsigned char __bss_end;
 
 #define MINI2440_SRAM_END     (0x33F00000)
 
-/*******************************************************************************
-* Function Name  : assert_failed
-* Description    : Reports the name of the source file and the source line number
-*                  where the assert error has occurred.
-* Input          : - file: pointer to the source file name
-*                  - line: assert error line source number
-* Output         : None
-* Return         : None
-*******************************************************************************/
-void assert_failed(rt_uint8_t* file, rt_uint32_t line)
-{
-    rt_kprintf("\n\r Wrong parameter value detected on\r\n");
-    rt_kprintf("       file  %s\r\n", file);
-    rt_kprintf("       line  %d\r\n", line);
-
-    while (1) ;
-}
-
 /**
  * This function will startup RT-Thread RTOS.
  */
